@@ -7,6 +7,7 @@ from threading import Thread
 from pydub import AudioSegment
 from pydub.playback import play
 
+import time
 
 # Dependencias
 #   pip install SpeechRecognition
@@ -40,6 +41,44 @@ def hi():
 
 def main():
     try:
+        print("              .,-:;//;:=,")
+        print("          . :H@@@MM@M#H/.,+%;,")
+        print("       ,/X+ +M@@M@MM%=,-%HMMM@X/,")
+        print("     -+@MM; $M@@MH+-,;XMMMM@MMMM@+-")
+        print("    ;@M@@M- XM@X;. -+XXXXXHHH@M@M#@/.")
+        print("  ,%MM@@MH ,@%=             .---=-=:=,.")
+        print("  =@#@@@MX.,                -%HX$$%%%:;")
+        print(" =-./@M@M$                   .;@MMMM@MM:")
+        print(" X@/ -$MM/                    . +MM@@@M$")
+        print(",@M@H: :@:                    . =X#@@@@-")
+        print(",@@@MMX, .                    /H- ;@M@M=")
+        print(".H@@@@M@+,                    %MM+..%#$.")
+        print(" /MMMM@MMH/.                  XM@MH; =;")
+        print("  /%+%$XHH@$=              , .H@@@@MX,")
+        print("   .=--------.           -%H.,@@@@@MX,")
+        print("   .%MM@@@HHHXX$$$%+- .:$MMX =M@@MM%.")
+        print("     =XMMM@MM@MM#H;,-+HMM@M+ /MMMX=")
+        print("       =%@M@M#@$-.=$@MM@@@M; %M%=")
+        print("         ,:+$+-,/H#MMMMMMM@= =,")
+        print("               =++%%%%+/:-.")
+        print("")
+        print("GLaDOS Genetic Lifeform and Disk Operating System v1.0")
+        print("Starting... ", end="")
+        time.sleep(1)
+        print("Done")
+        time.sleep(0.5)
+        print("Loading test chambers... ", end="")
+        time.sleep(1)
+        print("Done")
+        time.sleep(0.5)
+        print("Waking up test subjects... ", end="")
+        time.sleep(1)
+        print("Done")
+        time.sleep(0.5)
+        print("Making cake... ", end="")
+        time.sleep(1)
+        print("Done")
+        time.sleep(0.5)
         # r = sr.Recognizer()
         engine = pyttsx3.init()
         engine.setProperty("rate", 130)
