@@ -7,6 +7,8 @@ from threading import Thread
 from pydub import AudioSegment
 from pydub.playback import play
 
+import simpleaudio
+
 import time
 
 # Dependencias
@@ -21,24 +23,33 @@ def tokenize(command):
     return []
 
 def evaluate(command):
-    t = Thread()
+    t = None
     tokens = tokenize(command)
     if tokens[0] == "sing":
-        t = Thread(target=sing)
-        t.start()
+        return sing()
     elif tokens[0] == "hi":
-        t = Thread(target=hi)
-        t.start()
+        return hi()
+    elif tokens[0] == "who":
+        return who(tokens[1:])
+    
     return t
 
+def who(tokens):
+    if tokens[0] == "are":
+        waveObj = simpleaudio.WaveObject.from_wave_file('Audio/who_are.wav')
+        playObj = waveObj.play()
+        return playObj
+
 def sing():
-    song = AudioSegment.from_wav('Audio/want_you_gone.wav')
-    play(song)
+    waveObj = simpleaudio.WaveObject.from_wave_file('Audio/want_you_gone.wav')
+    playObj = waveObj.play()
+    return playObj
 
 def hi():
-    song = AudioSegment.from_wav('Audio/greet.wav')
-    play(song)
-
+    waveObj = simpleaudio.WaveObject.from_wave_file('Audio/greet.wav')
+    playObj = waveObj.play()
+    return playObj
+    
 def main():
     try:
         print("              .,-:;//;:=,")
@@ -84,32 +95,50 @@ def main():
         engine.setProperty("rate", 130)
 
         voices = engine.getProperty('voices')
-        print (voices)
 
         engine.setProperty('voice', voices[1].id)
         engine.setProperty('pitchshift', 5234)
 
-        song = AudioSegment.from_wav('Audio/glados_intro.wav')
-        play(song)
-        song = AudioSegment.from_wav('Audio/tell_me_your_name.wav')
-        play(song)
+        waveObj = simpleaudio.WaveObject.from_wave_file('Audio/glados_intro.wav')
+        playObj = waveObj.play()
+        playObj.wait_done()
+
+
+        #song = AudioSegment.from_wav('Audio/glados_intro.wav')
+        #play(song)
+        waveObj = simpleaudio.WaveObject.from_wave_file('Audio/tell_me_your_name.wav')
+        playObj = waveObj.play()
+        playObj.wait_done()
+        
         name = input("Name: ")
-        song = AudioSegment.from_wav('Audio/im_not_even_repeat_it.wav')
-        play(song)
+        
+        
+        waveObj = simpleaudio.WaveObject.from_wave_file('Audio/im_not_even_repeat_it.wav')
+        playObj = waveObj.play()
+        playObj.wait_done()
+        
         engine.say(name)
         engine.runAndWait()
         
-        t1 = Thread()
-
+        t1 = None
+        
         while True:
             cmd = input("GLaDOS $ ")
-            song = AudioSegment.from_wav('Audio/ok.wav')
-            play(song)
+            if not t1 is None:
+                t1.stop()
+            audio = AudioSegment.from_wav('Audio/ok.wav')
+            play(audio)
+            #waveObj = simpleaudio.WaveObject.from_wave_file('Audio/ok.wav')
+            #playObj = waveObj.play()
+            #playObj.wait_done()
             
             t1 = evaluate(cmd)
+            
     except KeyboardInterrupt:
-        song = AudioSegment.from_wav('Audio/goodbye.wav')
-        play(song)
+        if not playObj is None:
+            playObj.stop()
+            song = AudioSegment.from_wav('Audio/goodbye.wav')
+            play(song)
 
 if __name__ == '__main__':
     main()
