@@ -7,6 +7,8 @@ import random
 import time
 import datetime as dt
 import traceback
+import pickle
+import sys, os
 
 from threading import Thread
 from pydub import AudioSegment
@@ -19,6 +21,15 @@ from datetime import datetime
 #   pip install pyttsx3
 #   pip install pydub
 #   pip install simpleaudio
+
+# Funciones de proposito general #
+
+def print_line(text):
+    for char in text:
+        sys.stdout.write(char)
+        sys.stdout.flush()
+        time.sleep(0.05)
+##################################
 
 class Reminder():
     def __init__(self, description, time):
@@ -44,18 +55,50 @@ class User():
     def addReminder(self, reminder):
         print("DEBUG: {} {}".format(reminder.description,reminder.time))
         self.reminders.append(reminder)
+    def show(self):
+        print('{} {}'.format(self.name, self.reminders))
 
 
 class GLaDOS():
     def __init__(self):
-        self.songs = ['Audio/want_you_gone.wav', 'Audio/still_alive.wav']
+        self.songs = ['want_you_gone.wav', 'still_alive.wav']
         self.engine = pyttsx3.init()
         self.engine.setProperty('rate', 130)
         self.engineVoices = self.engine.getProperty('voices')
-        self.engine.setProperty('voice', self.engineVoices[7].id)
+        self.engine.setProperty('voice', self.engineVoices[1].id)
         self.engine.setProperty('pitchshift', 100)
         self.user = User()
-        
+        self.firstTime = 1
+    
+    def loadState(self):
+        with open('logs/log.txt', 'a') as log:
+            try:
+                with open('bin/data', 'rb') as data:
+                    self.firstTime = pickle.load(data)
+                    self.user = pickle.load(data)
+                    print('DEBUG: info recuperada del archivo de datos')
+                    self.user.show()
+                    print(str(self.firstTime))
+
+                    data.close()
+            except: 
+                traceback.print_exc(file=log)
+                log.close()
+                pass
+                
+
+    def saveState(self):
+        with open('logs/log.txt', 'a') as log:
+            try:
+                with open('bin/data', 'wb') as data:
+                    pickle.dump(self.firstTime, data)
+                    pickle.dump(self.user, data)
+                    data.close()
+            except:
+                traceback.print_exc(file=log)
+            finally:
+                log.close()
+
     def tokenize(self, command):
         if not command == "":
             return command.split()
@@ -77,6 +120,7 @@ class GLaDOS():
 
 
     def make_audio_obj(self, file_name):
+        file_name = 'Audio/{}'.format(file_name)
         waveObj = simpleaudio.WaveObject.from_wave_file(file_name)
         playObj = waveObj.play()
         return playObj
@@ -89,7 +133,9 @@ class GLaDOS():
         #Separamos en cantidad y unidad el target time
         n, unit = time_ammount.split(' ')
         n = int(n)
-        unit = unit[0:len(unit)-1]
+        unit = unit[0:len(unit)-1] if unit[len(unit)-1] == 's' else unit[0:len(unit)]
+
+        #print('DEBUG: parsed info {} {}'.format, n, unit)
         
         day, month, year = date.split('/')
         hour, minute, second = time.split(':')
@@ -110,6 +156,8 @@ class GLaDOS():
 
         calculated_date = dt.datetime(year, month, day, hour, minute, second).strftime("%d/%m/%Y %H:%M:%S")
         
+        # print('DEBUG: {}'.format(calculated_date))
+
         return calculated_date
 
     def set(self, tokens):
@@ -124,14 +172,14 @@ class GLaDOS():
                 target_time = target_time.strip()
                 time = self.calculate_date(target_time)
                 self.user.addReminder(Reminder(phrase, time))
-            return self.make_audio_obj('Audio/reminder.wav')
+            return self.make_audio_obj('reminder.wav')
         except:
             traceback.print_exc()
-            return self.make_audio_obj('Audio/reminder_error.wav')
+            return self.make_audio_obj('reminder_error.wav')
 
     def who(self, tokens):
         if tokens[0] == "are":
-            return self.make_audio_obj('Audio/who_are.wav')
+            return self.make_audio_obj('who_are.wav')
         # Aca se van a seguir agregando comandos
 
     def sing(self):
@@ -139,7 +187,7 @@ class GLaDOS():
         return self.make_audio_obj(self.songs[pos])
 
     def hi(self):
-        return self.make_audio_obj('Audio/greet.wav')
+        return self.make_audio_obj('greet.wav')
 
     def run(self):
         try:
@@ -165,40 +213,44 @@ class GLaDOS():
             print("               =++%%%%+/:-.")
             print("")
             print("GLaDOS Genetic Lifeform and Disk Operating System v1.0")
-            print("Starting... ", end="")
-            time.sleep(1)
+            print_line("Starting... ")
+            # time.sleep(1)
             print("Done")
-            time.sleep(0.5)
-            print("Loading test chambers... ", end="")
-            time.sleep(1)
+            # time.sleep(0.5)
+            print_line("Loading test chambers... ")
+            self.loadState()
+            # time.sleep(1)
             print("Done")
-            time.sleep(0.5)
-            print("Waking up test subjects... ", end="")
-            time.sleep(1)
+            # time.sleep(0.5)
+            print_line("Waking up test subjects... ")
+            # time.sleep(1)
             print("Done")
-            time.sleep(0.5)
-            print("Making cake... ", end="")
-            time.sleep(1)
+            # time.sleep(0.5)
+            print_line("Making cake... ")
+            # time.sleep(1)
             print("Done")
-            time.sleep(0.5)
+            # time.sleep(0.5)
             
             playObj = None
             t1 = None
             
-            #playObj = self.make_audio_obj('Audio/glados_intro.wav')
-            #playObj.wait_done()
-            #playObj = self.make_audio_obj('Audio/tell_me_your_name.wav')
-            #playObj.wait_done()
+            if self.firstTime:
+                playObj = self.make_audio_obj('glados_intro.wav')
+                playObj.wait_done()
+                playObj = self.make_audio_obj('tell_me_your_name.wav')
+                playObj.wait_done()
 
-            #waveObj = simpleaudio.WaveObject.from_wave_file('Audio/tell_me_your_name.wav')
-            #playObj = waveObj.play()
-            #playObj.wait_done()
+                # waveObj = simpleaudio.WaveObject.from_wave_file('Audio/tell_me_your_name.wav')
+                # playObj = waveObj.play()
+                # playObj.wait_done()
 
-            self.user.setName(input("Name: "))
+                self.user.setName(input("Name: "))
 
-            #playObj = self.make_audio_obj('Audio/im_not_even_repeat_it.wav')
-            #playObj.wait_done()
-            
+                playObj = self.make_audio_obj('what_kind_of_name.wav')
+                playObj.wait_done()
+
+                self.firstTime = 0
+
             #self.engine.say(self.user.getName())
             #self.engine.runAndWait()
 
@@ -217,8 +269,10 @@ class GLaDOS():
         except KeyboardInterrupt:
             if not playObj is None:
                 playObj.stop()
+            self.saveState()
             song = AudioSegment.from_wav('Audio/goodbye.wav')
             play(song)
+
 
 
 def main():
