@@ -10,7 +10,7 @@ import traceback
 import pickle
 import sys, os
 
-from threading import Thread
+import threading
 from pydub import AudioSegment
 from pydub.playback import play
 from datetime import datetime
@@ -29,35 +29,87 @@ def print_line(text):
         sys.stdout.write(char)
         sys.stdout.flush()
         time.sleep(0.05)
+
 ##################################
+
+# TODO:
+#   - Revisar pasaje de un reminder a otro
+class ReminderScheduler:
+    def __init__(self, engine):
+        self.engine = engine
+        self.timer = None
+        self.next_reminder = None
+        self.reminders = []
+    
+    def make_timer(self, reminder):
+        seconds = (reminder.getTime() - dt.datetime.today()).total_seconds()
+        self.timer = threading.Timer(seconds, self.reminder_handler, args=(reminder,))
+        self.timer.daemon = True
+        self.timer.start()
+
+    def addReminder(self, reminder):
+        tmp = None 
+        if self.reminders:
+            tmp = self.reminders[0]
+        self.reminders.append(reminder)
+        self.reminders = self.qsort(self.reminders)
+        if tmp != self.reminders[0]:
+            if self.timer != None:
+                self.timer.cancel()
+            self.make_timer(self.reminders[0])
+        print("DEBUG: {} {}".format(reminder.description,reminder.time))
+
+    def reminder_handler(self, reminder):
+        self.engine.say(reminder.getDescription())
+        self.engine.runAndWait()
+        self.reminders.pop(0)
+        if self.reminders:
+            self.make_timer(self.reminders[0])
+
+    def qsort(self, array):
+        less = []
+        equal = []
+        greater = []
+        if len(array) > 1:
+            pivot = array[0]
+            for x in array:
+                if x.getTime() < pivot.getTime():
+                    less.append(x)
+                elif x.getTime() == pivot.getTime():
+                    equal.append(x)
+                elif x.getTime() > pivot.getTime():
+                    greater.append(x)
+            return self.qsort(less)+equal+self.qsort(greater)
+        else:
+            return array
+
+    def getTimerInstance(self):
+        return self.timer
+
+    def delete_missed(self):
+        today = dt.datetime.today()
+        for i in range(0, len(self.reminders)):
+            if self.reminders[i].getTime() < today:
+                self.reminders.pop(i)
 
 class Reminder():
     def __init__(self, description, time):
         self.description = description
         self.time = time
-    def start_daemon(self):
-        # Aca va a iniciar el demonio para
-        #  chequear cuando se cumpla el tiempo
-        #  para un recordatorio
-        pass
-
+    def getDescription(self):
+        return self.description
+    def getTime(self):
+        return self.time
 
 class User():
     def __init__(self):
         self.name = ""
-        self.reminders = []
     def getName(self):
         return self.name
     def setName(self, name):
         self.name = name
-    def getReminders(self):
-        return self.reminders
-    def addReminder(self, reminder):
-        print("DEBUG: {} {}".format(reminder.description,reminder.time))
-        self.reminders.append(reminder)
     def show(self):
-        print('{} {}'.format(self.name, self.reminders))
-
+        print(self.name)
 
 class GLaDOS():
     def __init__(self):
@@ -68,6 +120,8 @@ class GLaDOS():
         self.engine.setProperty('voice', self.engineVoices[1].id)
         self.engine.setProperty('pitchshift', 100)
         self.user = User()
+        self.rscheduler = ReminderScheduler(self.engine)
+        self.thread = None
         self.firstTime = 1
     
     def loadState(self):
@@ -86,7 +140,6 @@ class GLaDOS():
                 log.close()
                 pass
                 
-
     def saveState(self):
         with open('logs/log.txt', 'a') as log:
             try:
@@ -118,14 +171,12 @@ class GLaDOS():
 
         return t
 
-
     def make_audio_obj(self, file_name):
         file_name = 'Audio/{}'.format(file_name)
         waveObj = simpleaudio.WaveObject.from_wave_file(file_name)
         playObj = waveObj.play()
         return playObj
 
-    # Hacer una funcion para sumar fechas
     def calculate_date(self, time_ammount):
         # Obtenemos la fecha y el tiempo actual
         date, time = datetime.now().strftime("%d/%m/%Y %H:%M:%S").split(' ')
@@ -154,11 +205,16 @@ class GLaDOS():
         elif unit == 'second':
             second = int(second) + n
 
-        calculated_date = dt.datetime(year, month, day, hour, minute, second).strftime("%d/%m/%Y %H:%M:%S")
+        calculated_date = dt.datetime(year, month, day, hour, minute, second)#.strftime("%d/%m/%Y %H:%M:%S")
         
         # print('DEBUG: {}'.format(calculated_date))
 
         return calculated_date
+
+    def reminder_handler(self, reminder):
+        self.engine.say(reminder.getDescription())
+        self.engine.runAndWait()
+        # Aca se tiene que eliminar la primera posicion del arreglo de reminders y se debe establecer el handler para el siguiente
 
     def set(self, tokens):
         # El set reminder va a funcionar sumando n (dias, horas, minutos) a la fecha actual
@@ -166,12 +222,14 @@ class GLaDOS():
         try:
             phrase, target_time = "", ""
             if tokens[0] == "reminder":
-                phrase_joined = ' '.join(tokens)
+                phrase_joined = ' '.join(tokens[1:])
                 phrase, target_time = phrase_joined.split('for')
                 phrase = phrase.strip()
                 target_time = target_time.strip()
                 time = self.calculate_date(target_time)
-                self.user.addReminder(Reminder(phrase, time))
+                reminder = Reminder(phrase, time)
+                # Examinar si cuando se termina de ejecutar el thread el objeto pasa a ser None
+                self.rscheduler.addReminder(reminder)
             return self.make_audio_obj('reminder.wav')
         except:
             traceback.print_exc()

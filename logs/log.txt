@@ -2,3 +2,7 @@ Traceback (most recent call last):
   File "C:\Users\Nico\aus\seminario3\GLaDOS_assistant\main.py", line 77, in loadState
     self.firstTime = pickle.load(data)
 EOFError: Ran out of input
+Traceback (most recent call last):
+  File "C:\Users\Nico\aus\seminario3\GLaDOS_assistant\main.py", line 131, in loadState
+    self.firstTime = pickle.load(data)
+EOFError: Ran out of input
